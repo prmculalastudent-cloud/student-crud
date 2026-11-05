@@ -49,9 +49,10 @@ services:
         fromService:
           type: web
           name: student-backend
-          property: host
+          envVarKey: RENDER_EXTERNAL_URL
 
 databases:
+  # ── Managed PostgreSQL Database ─────────────────────────────────────────────
   - name: student-db
     plan: free
     databaseName: db_student

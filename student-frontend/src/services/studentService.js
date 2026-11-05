@@ -1,30 +1,87 @@
 // Student API client service
 
+const STORAGE_KEY = 'STUDENT_API_URL_OVERRIDE';
+
 /**
- * Determine API base URL:
- * 1. If VITE_API_BASE_URL is defined (e.g. deployed on Render), use it.
- * 2. Otherwise use the local Vite proxy path '/api/culala/students'.
+ * Get manually configured URL from localStorage if set by user in UI
  */
-function getApiBase() {
+export function getCustomApiUrl() {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(STORAGE_KEY) || '';
+  }
+  return '';
+}
+
+/**
+ * Set manual URL in localStorage
+ */
+export function setCustomApiUrl(url) {
+  if (typeof window !== 'undefined') {
+    if (url && url.trim()) {
+      localStorage.setItem(STORAGE_KEY, url.trim());
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+}
+
+/**
+ * Clean and normalize API URL to ensure it points to /culala/students
+ */
+export function formatEndpoint(rawUrl) {
+  if (!rawUrl || !rawUrl.trim()) return '/api/culala/students';
+
+  let clean = rawUrl.trim().replace(/\/+$/, '');
+
+  // If host lacks protocol and doesn't start with /
+  if (!/^https?:\/\//i.test(clean) && !clean.startsWith('/')) {
+    clean = `https://${clean}`;
+  }
+
+  // If it's a bare Render internal host without domain (e.g. "student-backend" or "student-backend:8080")
+  const hostOnly = clean.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
+  if (!hostOnly.includes('.') && !hostOnly.includes('localhost')) {
+    clean = `https://${hostOnly}.onrender.com`;
+  }
+
+  // Append resource path if not present
+  if (!clean.endsWith('/culala/students')) {
+    clean = `${clean}/culala/students`;
+  }
+
+  return clean;
+}
+
+/**
+ * Resolve the current active API endpoint
+ */
+export function getApiBase() {
+  // 1. User manual override from UI
+  const custom = getCustomApiUrl();
+  if (custom) {
+    return formatEndpoint(custom);
+  }
+
+  // 2. Localhost development (uses Vite proxy)
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ) {
+    return '/api/culala/students';
+  }
+
+  // 3. Environment variable (VITE_API_BASE_URL set by Render Blueprint or .env)
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl && envUrl.trim()) {
-    let clean = envUrl.trim().replace(/\/+$/, '');
-    if (!/^https?:\/\//i.test(clean)) {
-      clean = `https://${clean}`;
-    }
-    // If the provided URL already contains /culala/students, don't duplicate
-    if (clean.endsWith('/culala/students')) {
-      return clean;
-    }
-    return `${clean}/culala/students`;
+    return formatEndpoint(envUrl);
   }
+
+  // 4. Default fallback
   return '/api/culala/students';
 }
 
-const API_BASE = getApiBase();
-
 /**
- * Helper to handle fetch responses safely (supporting both JSON and plain text responses)
+ * Helper to handle fetch responses safely
  */
 async function handleResponse(response) {
   const contentType = response.headers.get('content-type') || '';
@@ -46,11 +103,41 @@ async function handleResponse(response) {
 
 export const studentService = {
   /**
+   * Return current endpoint URL
+   */
+  getCurrentEndpoint() {
+    return getApiBase();
+  },
+
+  /**
+   * Test connection to a specific endpoint
+   */
+  async testConnection(targetUrl) {
+    const url = targetUrl ? formatEndpoint(targetUrl) : getApiBase();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return { ok: res.ok, status: res.status, url };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      return { ok: false, error: err.message, url };
+    }
+  },
+
+  /**
    * Fetch all students
    * GET /culala/students
    */
   async getAll() {
-    const res = await fetch(API_BASE, {
+    const endpoint = getApiBase();
+    const res = await fetch(endpoint, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -64,7 +151,8 @@ export const studentService = {
    * GET /culala/students/:id
    */
   async getById(id) {
-    const res = await fetch(`${API_BASE}/${id}`, {
+    const endpoint = `${getApiBase()}/${id}`;
+    const res = await fetch(endpoint, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -78,7 +166,8 @@ export const studentService = {
    * POST /culala/students
    */
   async create(studentData) {
-    const res = await fetch(API_BASE, {
+    const endpoint = getApiBase();
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -99,7 +188,8 @@ export const studentService = {
    * PUT /culala/students/:id
    */
   async update(id, studentData) {
-    const res = await fetch(`${API_BASE}/${id}`, {
+    const endpoint = `${getApiBase()}/${id}`;
+    const res = await fetch(endpoint, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -120,7 +210,8 @@ export const studentService = {
    * DELETE /culala/students/:id
    */
   async delete(id) {
-    const res = await fetch(`${API_BASE}/${id}`, {
+    const endpoint = `${getApiBase()}/${id}`;
+    const res = await fetch(endpoint, {
       method: 'DELETE',
     });
     return handleResponse(res);

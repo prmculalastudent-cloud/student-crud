@@ -12,12 +12,12 @@ export default function App() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [alert, setAlert] = useState(null);
 
-  // Trigger alert banner with auto-dismiss after 4 seconds
+  // Trigger alert banner with auto-dismiss after 6 seconds
   const showAlert = (type, message) => {
     setAlert({ type, message });
     setTimeout(() => {
       setAlert((curr) => (curr?.message === message ? null : curr));
-    }, 4500);
+    }, 6000);
   };
 
   // Fetch all students from the API
@@ -25,11 +25,14 @@ export default function App() {
     setLoading(true);
     try {
       const data = await studentService.getAll();
-      // Ensure data is an array
       setStudents(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load students:', err);
-      showAlert('error', `Failed to fetch students from API: ${err.message}`);
+      const isNetworkErr = err.message === 'Failed to fetch' || err.message.includes('NetworkError');
+      const helpfulMsg = isNetworkErr
+        ? `Could not reach backend at ${studentService.getCurrentEndpoint()}. Note: Render free tier services sleep when idle and take ~45–60s to wake up on first load. You can also click "API Config" in the top bar to verify or update the backend URL.`
+        : `API Error: ${err.message}`;
+      showAlert('error', helpfulMsg);
     } finally {
       setLoading(false);
     }
@@ -67,7 +70,6 @@ export default function App() {
   // Handle inline Edit trigger
   const handleEditSelect = (student) => {
     setEditingStudent(student);
-    // Smooth scroll to form on mobile devices
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
