@@ -26,7 +26,7 @@ export function setCustomApiUrl(url) {
 }
 
 /**
- * Clean and normalize API URL to ensure it points to /culala/students
+ * Clean and normalize API URL to ensure it points to /culala/students or /students
  */
 export function formatEndpoint(rawUrl) {
   if (!rawUrl || !rawUrl.trim()) return '/api/culala/students';
@@ -44,8 +44,8 @@ export function formatEndpoint(rawUrl) {
     clean = `https://${hostOnly}.onrender.com`;
   }
 
-  // Append resource path if not present
-  if (!clean.endsWith('/culala/students')) {
+  // Append resource path if neither /culala/students nor /students is present
+  if (!clean.endsWith('/culala/students') && !clean.endsWith('/students')) {
     clean = `${clean}/culala/students`;
   }
 

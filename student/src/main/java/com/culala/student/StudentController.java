@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @CrossOrigin(origins = "*")
 @Controller
-@RequestMapping(path="/culala/students")
+@RequestMapping(path={"/culala/students", "/students"})
 public class StudentController {
 
     @Autowired

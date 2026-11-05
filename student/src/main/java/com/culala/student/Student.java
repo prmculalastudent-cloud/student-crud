@@ -15,6 +15,15 @@ public class Student {
     private String course;
     private String section;
 
+    public Student() {}
+
+    public Student(String firstname, String lastname, String course, String section) {
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.course = course;
+        this.section = section;
+    }
+
     public Integer getId() {
         return id;
     }
