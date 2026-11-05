@@ -1,5 +1,5 @@
 services:
-  # ── Backend (Docker / Spring Boot) ──────────────────────────────────────────
+  # ── Backend (Docker) ─────────────────────────────────────────────────────────
   - type: web
     name: student-backend
     env: docker
@@ -34,7 +34,7 @@ services:
       - key: PORT
         value: "8080"
 
-  # ── Frontend (Static / Vite React) ──────────────────────────────────────────
+  # ── Frontend (Static) ────────────────────────────────────────────────────────
   - type: web
     name: student-frontend
     env: static
@@ -46,10 +46,12 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://student-backend.onrender.com
+        fromService:
+          type: web
+          name: student-backend
+          property: host
 
 databases:
-  # ── Managed PostgreSQL Database ─────────────────────────────────────────────
   - name: student-db
     plan: free
     databaseName: db_student
