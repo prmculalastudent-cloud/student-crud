@@ -2,14 +2,13 @@ package com.culala.student;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 
 @CrossOrigin(origins = "*")
-@Controller
+@RestController
 @RequestMapping(path={"/culala/students", "/students"})
 public class StudentController {
 
@@ -17,18 +16,17 @@ public class StudentController {
     private StudentRepository studentRepository;
 
     @PostMapping
-    public ResponseEntity createStudent(@RequestBody Student student) throws URISyntaxException {
+    public ResponseEntity<?> createStudent(@RequestBody Student student) throws URISyntaxException {
         Student savedStudent = studentRepository.save(student);
         return ResponseEntity.created(new URI("/students/" + savedStudent.getId())).body(savedStudent);
     }
 
     @GetMapping
-    public @ResponseBody Iterable<Student> getAllStudents() {
+    public Iterable<Student> getAllStudents() {
         return studentRepository.findAll();
     }
 
     @GetMapping("/{id}")
-    @ResponseBody
     public ResponseEntity<?> getStudentById(@PathVariable Integer id) {
         Optional<Student> student = studentRepository.findById(id);
 
@@ -40,7 +38,6 @@ public class StudentController {
     }
 
     @PutMapping("/{id}")
-    @ResponseBody
     public ResponseEntity<?> updateStudent(@PathVariable Integer id, @RequestBody Student updated) {
         Optional<Student> existingOpt = studentRepository.findById(id);
 
@@ -61,7 +58,6 @@ public class StudentController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseBody
     public ResponseEntity<String> deleteStudent(@PathVariable Integer id) {
         Optional<Student> student = studentRepository.findById(id);
 
