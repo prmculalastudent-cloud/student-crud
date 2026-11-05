@@ -1,6 +1,27 @@
 // Student API client service
 
-const API_BASE = '/api/culala/students';
+/**
+ * Determine API base URL:
+ * 1. If VITE_API_BASE_URL is defined (e.g. deployed on Render), use it.
+ * 2. Otherwise use the local Vite proxy path '/api/culala/students'.
+ */
+function getApiBase() {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl.trim()) {
+    let clean = envUrl.trim().replace(/\/+$/, '');
+    if (!/^https?:\/\//i.test(clean)) {
+      clean = `https://${clean}`;
+    }
+    // If the provided URL already contains /culala/students, don't duplicate
+    if (clean.endsWith('/culala/students')) {
+      return clean;
+    }
+    return `${clean}/culala/students`;
+  }
+  return '/api/culala/students';
+}
+
+const API_BASE = getApiBase();
 
 /**
  * Helper to handle fetch responses safely (supporting both JSON and plain text responses)
